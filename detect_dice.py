@@ -42,7 +42,7 @@ def count_pips(img,orig_x, orig_y, p=None):
             num_pips+=1
             x, y, w, h = cv2.boundingRect(pip)
             # cv2.rectangle(image, (x, y), (x + w, y + h), (255, 0, 0), 6)
-            cv2.rectangle(image, (orig_x+x, orig_y+y), (orig_x+x + w, orig_y+y + h), (255, 0, 0), 6)
+            cv2.rectangle(img, (orig_x+x, orig_y+y), (orig_x+x + w, orig_y+y + h), (255, 0, 0), 6)
             if(p):
                 cv2.rectangle(print_img, (x, y), (x + w, y + h), (0, 0, 0), 2)
                 cv2.putText(print_img, f"Pip #{num_pips}", (x,y-5), fontFace, 0.75, (0,0,0), 2)
@@ -54,7 +54,7 @@ def count_pips(img,orig_x, orig_y, p=None):
     # Put the text on the image
     if(p):
         show_img(print_img,'4', '4: Sample Die Face',scale=1,color=(0,0,0),thick=2,org=(5,80))
-    cv2.putText(image, text, org, fontFace, fontScale, color, thickness)#, lineType)
+    cv2.putText(img, text, org, fontFace, fontScale, color, thickness)#, lineType)
     
 
 
