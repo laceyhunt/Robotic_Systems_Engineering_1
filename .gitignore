@@ -1,3 +1,4 @@
 *.mp4
 MVSDK/
+robot/lib/*
 FANUC-Ethernet_IP_Drivers/
