@@ -1,5 +1,7 @@
 *.mp4
 MVSDK/
 robot/lib/*
+
+*/Camera/*
 */__pycache__/*
 FANUC-Ethernet_IP_Drivers/
