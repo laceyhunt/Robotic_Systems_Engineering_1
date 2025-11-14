@@ -34,22 +34,6 @@ def read_H_mtx(filename="homography_mtx.txt"):
    H_loaded = np.loadtxt(filename)
    return H_loaded
 
-def read_dice_pixel_coords():
-   """reads pixel coord values from txt file
-
-   Returns:
-      list: list of lists (coordinates of the form [x,y,w,h])
-   """
-   #NOTE: will not need after mqtt for mqtt subscribing robot, just comment out this line
-   coords = []
-   with open("img_die_loc.txt", "r") as file:
-      next(file)  # skip the header line ("coordinates")
-      for line in file:
-         # strip removes newline, split by comma, convert each to float (or int)
-         parts = [float(x) for x in line.strip().split(",")]
-         coords.append(parts)
-   return coords
-
 def calibrate_H_mtx():
    """skeleton to calibrate a H matrix for conversion. This will be different for each robot (bc they have different move methods)
    """
@@ -61,7 +45,7 @@ def calibrate_H_mtx():
       real_points[i] = [robot_x, robot_y]
       # Move the robot out of the way
       img=detect_and_count.take_photo()
-      x,y,w,h = detect_and_count.find_die(img)
+      x,y,w,h = locate_die(img,calib=True)
       # Save die center coordinates
       image_points[i]=[(x+(0.5*w)),(y+(0.5*h))]
       # Pick die back up
@@ -70,7 +54,7 @@ def calibrate_H_mtx():
    save_H_mtx(H)
 
       
-def convert_pix_to_robot_coords(x,y,w,h,x_offset=0,y_offset=0):
+def convert_pix_to_robot_coords(x,y,w,h,x_offset=100,y_offset=120):
    """converts some pixel coordinate to a robot coordinate
          offsets will be different depending on the robot
 
@@ -89,8 +73,8 @@ def convert_pix_to_robot_coords(x,y,w,h,x_offset=0,y_offset=0):
    real = H @ pixel
    real /= real[2]  # normalize
    X, Y = real[0], real[1]
-   X+=x_offset
-   Y+=y_offset
+   X+=x_offset  
+   Y+=y_offset   
    # print(X, Y)
    return (X,Y)
 
@@ -114,7 +98,7 @@ def break_cluster(coordinate,width=1, height=2):
    # Go home
 
 
-def locate_die(image):
+def locate_die(image, calib=False):
    """_summary_
 
    Args:
@@ -127,10 +111,11 @@ def locate_die(image):
    lower_yellow = np.array([15,40,40])
    upper_yellow = np.array([25,255,255])
    mask = cv2.inRange(hsv_img,lower_yellow,upper_yellow)
+   median = cv2.medianBlur(mask,5)
    # show_img(mask,'3','3: Mask')
 
    # # Find contours in the mask
-   contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
+   contours, _ = cv2.findContours(median, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
    # print(f"Num contours: {len(contours)}")
 
    num_dice=0
@@ -141,7 +126,7 @@ def locate_die(image):
          
          # CHECK FOR CLUSTERS!
          if cv2.contourArea(contour) > 3500:
-            break_cluster(0,0) # Will be different for each person, will write
+            break_cluster(0,0)                  # Will be different for each person, will write
             return 0
          num_dice+=1
          
@@ -159,12 +144,13 @@ def locate_die(image):
          x, y, w, h = cv2.boundingRect(contour)
          # Going to look different if not sending mqtt... will read in from dictionary
          (x_coord,y_coord)=convert_pix_to_robot_coords(x,y,w,h)
-         # return x,y,w,h
+         if calib:
+            return x,y,w,h
          with open('img_die_loc.txt', 'a') as file:
                file.write(f"{float(x)},{float(y)},{float(w)},{float(h)}\n")
          cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)  # Green bounding box
          # Define region of interest (new img with those coords)
-         die_face = mask[y:(y + h), x:(x + w)].copy()
+         die_face = median[y:(y + h), x:(x + w)].copy()
          num_pips=detect_and_count.count_pips(die_face,x,y, num_dice)
          text = str(num_pips)+" pips"
          text2 = str((round(float(x_coord), 2), round(float(y_coord), 2)))

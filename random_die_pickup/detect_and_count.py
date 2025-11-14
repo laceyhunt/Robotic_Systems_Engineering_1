@@ -123,7 +123,7 @@ def read_dice_pixel_coords():
             x<=610 is for dj
 
     Returns:
-        list: list of coords
+        list: list of lists (coordinates of the form [x,y,w,h])
     """
     coords = []
     with open("img_die_loc.txt", "r") as file:
